@@ -1,0 +1,99 @@
+First of all make sure you have docker installed on your machine and docker daemon is running on your machine
+
+We want to run two sites simultaneously in our machine so that we will create another docker-machine
+
+We need to create a docker-machine as a main docker-machine, 
+To create a docker-machine we can execute following commands
+
+docker-machine create --driver virtualbox default
+docker-machine ls
+docker-machine ip default
+
+to create another docker-machine, execute following commands
+
+docker-machine create --driver virtualbox dev1
+docker-machine ls
+docker-machine ip dev1
+
+Now, We have two docker-machines created,
+Here we will assume that default docker machine is binded with IP 192.168.99.100
+And dev1 docker machine is binded with IP 192.168.99.101
+
+We need to start each of the docker-machines if not already started
+
+docker-machine start default
+docker-machine start dev1
+
+Now, we can create container in each docker-machine and we can run those containers simultaneously,
+We will create development container in default docker-machine and admin container in dev1 docker-machine,
+for that we need to switch to default docker-machine, for that execute following commands
+
+
+docker-machine env default
+
+eval $(docker-machine env default)
+
+curl -L "https://rcms-backup.s3.amazonaws.com/install_shell/dockerfile_49a5fdef090d27d57bfae3b3baa685da?AWSAccessKeyId=15TV6X9W3KCCT8808ER2&Expires=1437646506&Signature=TMNiD7iHZCsxFDW%2FL6p%2FfcWpvpo%3D" | docker build -t rcms-120673 - && docker run --name "aio-admin.r-cms.jp-120673-n2DuGKJfZSd3" -v $GIT_RCMS/RCMS-OpenDev-ClosedBeta/nfs/:/home/rcms/nfs/ --privileged=true -p 80:80 -p 22 -p 5432:5432 -d rcms-120673 /usr/bin/supervisord
+
+
+after creating and configuring the container we can create admin container in dev1 docker-machine 
+For that we will switch the docker-machine using following command
+
+eval $(docker-machine env dev1)
+
+we will create admin container using docker script for admin container
+curl -L "https://rcms-backup.s3.amazonaws.com/install_shell/dockerfile_49a5fdef090d27d57bfae3b3baa685da?AWSAccessKeyId=15TV6X9W3KCCT8808ER2&Expires=1437646506&Signature=TMNiD7iHZCsxFDW%2FL6p%2FfcWpvpo%3D" | docker build -t rcms-120673 - && docker run --name "aio-admin.r-cms.jp-120673-n2DuGKJfZSd3" -v $GIT_RCMS/RCMS-OpenDev-ClosedBeta/nfs/:/home/rcms/nfs/ --privileged=true -p 80:80 -p 22 -p 5432:5432 -d rcms-120673 /usr/bin/supervisord
+
+
+After completion of creation of both containers, we have two containers running in two different docker-machines
+
+Now, For connection of database from container to another container, we need to change postgres configuration
+For that change the configuration as below
+
+Open the bash of the container using following command
+docker exec -it aio-admin.r-cms.jp-120673-n2DuGKJfZSd3 bash
+
+Change configuration for postgres, open following file in vi using command below
+vi /var/lib/pgsql/9.4/data/pg_hba.conf
+ge
+and add following line
+host all all 192.168.99.0/24 trust
+
+Change configuration for postgres, Open following file in vi using 	
+vi /var/lib/pgsql/9.4/data/postgresql.conf 
+
+and add following line
+listen_addresses='*'
+
+
+To check whether the postgres is able to connect from admin container to development container, we can check using following command
+psql -h 192.168.99.100 --user postgres
+
+If it will be able to connect then it will show the postgre prompt otherwise it will show some failure message
+
+
+Now, for admin site to be functional on dev1 docker-machine, we have to change some configuratin in the container
+for that purpose open bash shell of admin site using following command
+
+e.g. docker exec -it aio-admin.r-cms.jp-120673-n2DuGKJfZSd3 bash
+
+Change IP in default.php like following
+
+vi /home/rcms/120673/lib/default.php
+define("ROOT_URL","http://192.168.99.101");
+define("ROOT_SSL_URL","http://192.168.99.101”);
+
+And then we need to change the symbolic link in the /home/vhosts/ directory
+
+rm 192.168.99.100
+ln -s /home/rcms/120673/html 192.168.99.101
+
+
+
+
+
+
+
+
+
+

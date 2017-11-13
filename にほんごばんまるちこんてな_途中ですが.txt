@@ -1,0 +1,49 @@
+前提条件
+* dockerがインストールされていること
+
+1. docker-machineを2つ作成する（ここではdefaultとdev1を作成）
+
+  docker-machine create --driver virtualbox default
+  docker-machine ls
+  docker-machine create --driver virtualbox dev1
+  docker-machine ls
+
+2. IPアドレスの確認
+  docker-machine ip default
+  docker-machine ip dev1
+
+3. （docker-machineが動いていなければ）docker-machineを実行する
+  docker-machine start default
+  docker-machine start dev1
+
+4. それぞれのdocker-machineに管理サイト/企業サイトのコンテナを準備する
+   curlの設定が加藤さん・寺嶋さんのそのままでは動かないため注意（-p 5432:5432が追加で必要）
+  * 企業サイト（default側)
+    eval $(docker-machine env default)
+    curl -L "https://rcms-backup.s3.amazonaws.com/install_shell/dockerfile_**********************?AWSAccessKeyId=***************&Expires=***********&Signature=******************" | docker build -t rcms-120960 - && docker run --name "aio-develop.r-cms.jp-120960-**********" -v $GIT_RCMS/RCMS-OpenDev-ClosedBeta/nfs/:/home/rcms/nfs/ --privileged=true -p 80:80 -p 22 -p 5432:5432 -d rcms-120960 /usr/bin/supervisord
+
+  * 管理サイト (dev1)
+    eval $(docker-machine env dev1)
+    curl -L "https://rcms-backup.s3.amazonaws.com/install_shell/dockerfile_**********************?AWSAccessKeyId=***************&Expires=***********&Signature=******************" | docker build -t rcms-120673 - && docker run --name "aio-admin.r-cms.jp-120673-**********" -v $GIT_RCMS/RCMS-OpenDev-ClosedBeta/nfs/:/home/rcms/nfs/ --privileged=true -p 80:80 -p 22 -p 5432:5432 -d rcms-120673 /usr/bin/supervisord
+
+ 5. 2つのdocker-machine間の接続のため，postgresの設定を修正
+ * コンテナ環境へ移動
+   docker exec -it aio-admin.r-cms.jp-120673-********** /bin/bash
+ * /var/lib/pgsql/9.4/data/pg_hba.confの末尾に下記を追加
+   host all all 192.168.99.0/24 trust
+ * /var/lib/pgsql/9.4/data/postgresql.confの末尾に下記を追加
+   listen_addresses='*'
+
+ 6. 接続の確認
+ * dockerを再起動
+ * コンテナ環境内でpostgresの接続確認．成功時はpostgresのプロンプトになる
+   psql -h 192.168.99.100 --user postgres
+
+ 7. デフォルトip設定の修正
+ * コンテナ内で/home/rcms/120673/lib/default.phpで該当のマクロを下記に変更
+  define("ROOT_URL","http://192.168.99.101");
+  define("ROOT_SSL_URL","http://192.168.99.101”);
+
+  cd /home/vhosts/
+  rm 192.168.99.100
+  ln -s /home/rcms/120673/html 192.168.99.101
