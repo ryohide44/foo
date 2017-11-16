@@ -46,4 +46,7 @@
 
   cd /home/vhosts/
   rm 192.168.99.100
-  ln -s /home/rams/120673/html 192.168.99.101
+  ln -s /home/rcms/120673/html 192.168.99.101
+
+/etc/supervisord.d/service.confの[program:postgresql]をいじる
+
