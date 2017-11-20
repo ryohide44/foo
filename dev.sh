@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # 螟画焚縺ｮ險ｭ螳�
-GIT_RCMS=/Users/ryota/src/tmp;
-OPENDEV_DIR=/Users/ryota/src/tmp/RCMS/RCMS-OpenDev-ClosedBeta;
-SITES_DIR=/Users/ryota/src/tmp/RCMS/RCMS-sites;
+GIT_RCMS=/Volumes/MYHARD/src/tmp;
+OPENDEV_DIR=/Volumes/MYHARD/src/RCMS/RCMS-OpenDev-ClosedBeta;
+SITES_DIR=/Volumes/MYHARD/src/RCMS/RCMS-sites;
 SITE_ID=120960;
 DB_S3URL="https://rcms-backup.s3.amazonaws.com/120960/20171117145447/ec1c0373e600ea522a2fe06422df359e.gz?AWSAccessKeyId=15TV6X9W3KCCT8808ER2&Expires=1511502972&Signature=%2Fq5TYXIwSJHBYDk2SBbELIDn61k%3D";
 SITE_DATA_S3URL="https://rcms-backup.s3.amazonaws.com/120960/20171117145447/ec1c0373e600ea522a2fe06422df359e.tar.gz?AWSAccessKeyId=15TV6X9W3KCCT8808ER2&Expires=1511502972&Signature=Jb5ScObgldkypor9Z6O8FS1Q6MQ%3D";
@@ -37,7 +37,7 @@ if [ `docker ps -a | grep $DOCKER_NAME |wc -l` -ge 1 ]; then
     exit;
 fi;
 
-# 繝�Φ繝昴Λ繝ｪ繝輔か繝ｫ繝縺ｫ繝繝ｳ繝励ヵ繧｡繧､繝ｫ繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝峨☆繧�
+# 繝�Φ繝昴Λ繝ｪ繝輔か繝ｫ繝縺ｫ繝繝ｳ繝励ヵ繧｡繧､繝ｫ繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝峨☆繧�
 curl -o $GIT_RCMS/sites/$SITE_ID/install/rcms.gz $DB_S3URL;
 if [ $? -ne 0 ]; then echo "Failed to download DB dump."; exit; fi;
 curl -o $GIT_RCMS/sites/$SITE_ID/install/rcms.tar.gz $SITE_DATA_S3URL;
@@ -76,10 +76,10 @@ curl -L $DOCKERFILE_S3URL | docker build -t rcms-$SITE_ID - &&  docker run --pri
 # Ansible繧､繝ｳ繧ｹ繝医�繝ｫ
 docker exec $DOCKER_NAME yum install ansible -y;
 
-# 隲ｸ縲�そ繝�ヨ繧｢繝���医ョ繝ｼ繧ｿ繝吶�繧ｹ蜷ｫ繧��
+# 隲ｸ縲�そ繝�ヨ繧｢繝���医ョ繝ｼ繧ｿ繝吶�繧ｹ蜷ｫ繧��
 docker exec $DOCKER_NAME ansible-playbook /usr/local/ansible/install.yml --connection=local --skip-tags extra,env,postgresql,rcms  --extra-vars "WORK_PATH=/home/rcms/$SITE_ID/install SITE_PATH=/home/rcms SITE_ID=$SITE_ID DOMAIN_NAME=192.168.99.100 CORE_DIR=/home/rcms/nfs DB_USER=postgres DB_PASSWORD= DB_HOST=127.0.0.1"; 
 
-# 繧ｵ繧､繝�ID 驟堺ｸ九ｒ荳ｸ縺斐→繧ｳ繝斐�縺励※騾驕ｿ
+# 繧ｵ繧､繝�ID 驟堺ｸ九ｒ荳ｸ縺斐→繧ｳ繝斐�縺励※騾驕ｿ
 docker exec $DOCKER_NAME cp -R /home/rcms/$SITE_ID /home/rcms/${SITE_ID}_back;
 
 # 譁ｰ縺励＞蜷榊燕縺ｧ繧､繝｡繝ｼ繧ｸ菴懈�縲√さ繝ｳ繝�リ蜑企勁
@@ -111,7 +111,7 @@ echo $DOCKER_RUN > /tmp/docker_run.sh;
 chmod 755 /tmp/docker_run.sh;
 /tmp/docker_run.sh;
 
-# 騾驕ｿ縺励◆繧ｵ繧､繝�ID驟堺ｸ九ｒ蠕ｩ蜈�
+# 騾驕ｿ縺励◆繧ｵ繧､繝�ID驟堺ｸ九ｒ蠕ｩ蜈�
 docker exec $DOCKER_NAME mv /home/rcms/${SITE_ID}_back/install/${SITE_ID}/data /home/rcms/$SITE_ID/
 docker exec $DOCKER_NAME mv /home/rcms/${SITE_ID}_back/install/${SITE_ID}/db /home/rcms/$SITE_ID/
 docker exec $DOCKER_NAME mv /home/rcms/${SITE_ID}_back/install/${SITE_ID}/html /home/rcms/$SITE_ID/
@@ -151,6 +151,10 @@ docker exec $DOCKER_NAME sed -i -e 's/"ROOT_SSL_URL","http\(\|s\):\/\/aio-develo
 docker exec $DOCKER_NAME sed -i -e 's/"LIB_PATH","\/lib"/"LIB_PATH","\/home\/rcms\/nfs\/lib"/g' $DEFAULT_PHP;
 docker exec $DOCKER_NAME sed -i -e 's/"TEMPLATE_PATH","\/templates"/"TEMPLATE_PATH","\/home\/rcms\/nfs\/templates"/g' $DEFAULT_PHP;
 docker exec $DOCKER_NAME sed -i -e 's/"ORIGINAL_DIR","\/original"/"ORIGINAL_DIR","\/home\/rcms\/nfs\/original"/g' $DEFAULT_PHP;
+
+# docker-machine縺ｮIP繧｢繝峨Ξ繧ｹ縺�192.168.99.100縺倥ｃ縺ｪ縺�ｺｺ縺ｯ縲！P繧｢繝峨Ξ繧ｹ繧貞､画峩縺吶ｋ
+docker exec $DOCKER_NAME ln -s /home/rcms/$SITE_ID/html /home/vhosts/192.168.99.103
+docker exec $DOCKER_NAME sed -i -e 's/192\.168\.99\.100/192\.168\.99\.103/g' $DEFAULT_PHP;
 docker exec $DOCKER_NAME sed -i -e 's/"RCMS_DEV_MODE","0"/"RCMS_DEV_MODE","1"/g' $DEFAULT_PHP;
 docker exec $DOCKER_NAME rm -f /home/rcms/$SITE_ID/html/management/.htaccess;
 
@@ -161,7 +165,7 @@ docker exec $DOCKER_NAME ln -sf /home/rcms/original/js /home/rcms/$SITE_ID/html/
 docker exec $DOCKER_NAME ln -sf /home/rcms/original/tools /home/rcms/$SITE_ID/html/tools;
 docker exec $DOCKER_NAME ln -sf /home/rcms/original/wysiwyg /home/rcms/$SITE_ID/html/wysiwyg;
 
-# 繝�Φ繝昴Λ繝ｪ繝輔か繝ｫ繝縺ｮ蜑企勁
+# 繝�Φ繝昴Λ繝ｪ繝輔か繝ｫ繝縺ｮ蜑企勁
 sudo rm -fr $GIT_RCMS/sites/$SITE_ID/install;
 
 # 繝ｭ繧ｰ蜃ｺ蜉�

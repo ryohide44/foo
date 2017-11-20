@@ -1,3 +1,5 @@
 postgresqlのエラー
 =>http://d.dev.diverta.jp/5a09998e93580
   このサイトのdocker exec $DOCKER_NAME sed -i -e 's/9.4/9.6/g' /etc/supervisord.d/service.conf; コンテナのこのファイルを見る。
+
+Adminの表示ができない(basic認証がダメなのか、そもそもプログラムが悪いのか)
